@@ -1,0 +1,55 @@
+---
+title: "Practical Machine Learning"
+author: "Jonathan Pavkov"
+date: "Tuesday, December 22, 2015"
+output: html_document
+---
+
+### Overview
+To start the analysis, I removed variables that had a near zero variance using the nearZeroVar function. Following this I removed the name and identifier columns, as well as date (figuring the date shouldn't have an impact on predicting the exercise type). Finally, I removed all columns that had NA.
+```{r, warning=FALSE}
+options(width = 10000)
+setwd("C:/devl/Coursera/08 Practical Machine Learning/project")  
+library(rattle)
+library(caret)
+training <- read.csv("pml-training.csv")
+testing <- read.csv("pml-testing.csv")
+nsv <- nearZeroVar(training,saveMetrics=FALSE)
+training <- training[,-nsv]
+training <- training[,c(-2,-5)]
+training <- training[,-1]
+training <- training[,colSums(is.na(training)) == 0]
+```
+
+### Model Used
+I used the random forest method for the training set. This was because it was the only type of training that I could do in under 10+ minutes of processing time.
+
+```{r, eval=FALSE}
+mtryGrid <- expand.grid(mtry = 100)
+training_subset <- training[sample(1:nrow(training), 1000, replace=FALSE),]
+modFit_rf <- train(classe ~ .,data=training_subset,method="rf",tuneGrid=mtryGrid)
+modFit_rf
+```
+
+```{r, echo=FALSE}
+load(file="modFit_rf")
+load(file="pred_rf")
+```
+
+```{r, echo=FALSE}
+modFit_rf
+```
+
+The resampling Accuracy is 91.4%, and the resampling Kappa is 89.1%
+1. Cross Validation: bootstrapped, 25 times
+2. Expected out of sample error: 10%, based on 2 / 20 of the test set provided not being accurate.
+
+### Outcome
+In the predictions below, 18 of them were accurate.
+```{r}
+pred_rf <- predict(modFit_rf,testing)
+pred_rf
+```
+
+### Conclusions
+The random forest model was a good choice, and was accurate 90% of the time on the test data set. With more processing power, it would be nice to explore other modeling techniques and compare results.
